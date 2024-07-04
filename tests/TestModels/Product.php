@@ -23,6 +23,7 @@ class Product extends Model
             'fields' => [
                 'id' => ['type' => 'bigint'],
                 'name' => ['type' => 'text'],
+                'alt' => ['type' => 'text'],
                 'description' => ['type' => 'string'],
                 'brand_name' => ['type' => 'string'],
                 'price' => ['type' => 'integer'],
@@ -47,6 +48,7 @@ class Product extends Model
     {
         return [
             'name' => $this->name,
+            'alt' => $this->alt ?: '',
             'description' => $this->description,
             'brand_name' => $this->brand_name,
             'category_id' => $this->category_id,

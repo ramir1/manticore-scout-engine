@@ -12,6 +12,8 @@ class Builder
 {
     public string $index;
 
+    public array $highlight = [];
+
     public ?array $columns = null;
 
     public string $search = '';
@@ -48,19 +50,17 @@ class Builder
 
     /**
      * The groupings sorting for the query
-     * @var array
      */
     public array $groupSorts = [];
 
     /**
      * The group N by fields parameter set
-     *
-     * @var int
      */
     public int $groupN = 0;
 
     public array $bindings = [
         'select' => [],
+        'highlight' => [],
         'search' => [],
         'where' => [],
         'groupBy' => [],
@@ -123,6 +123,26 @@ class Builder
     }
 
     /**
+     * Highlighting enables you to obtain highlighted text fragments from documents containing matching keywords.
+     */
+    public function highlight(array $options = [], array $fieldList = [], ?string $query = null, string $as = 'highlight'): Builder
+    {
+        if (empty($fieldList) && !empty($query)){
+            throw new InvalidArgumentException("Parameter 'query' required with field_list.");
+        }
+
+        if ($query){
+            $this->addBinding($query, 'highlight');
+        }
+
+        $this->highlight['options'] = $options;
+        $this->highlight['field_list'] = $fieldList;
+        $this->highlight['as'] = $as;
+
+        return $this;
+    }
+
+    /**
      * Add a new “raw” select expression to the query.
      */
     public function selectRaw(string $raw, array $bindings = []): Builder
@@ -139,17 +159,19 @@ class Builder
     /**
      * Set the search which the query is targeting.
      */
-    public function search($search = ''): Builder
+    public function search(?string $search = ''): Builder
     {
-        $this->search = $search;
+        $this->search = strval($search);
 
-        if (!empty($this->search)) {
-            if ($this->autoEscaping) {
-                $search = $this->grammar->escapeQueryString($search);
-            }
-
-            $this->addBinding($search, 'search');
+        if ($this->search === '') {
+            return $this;
         }
+
+        if ($this->autoEscaping) {
+            $search = $this->grammar->escapeQueryString($search);
+        }
+
+        $this->addBinding($search, 'search');
 
         return $this;
     }
@@ -157,17 +179,11 @@ class Builder
     /**
      * Proximity distance is specified in words, adjusted for word count,
      * and applies to all words within quotes
-     *
-     * @param float|int $operator
      */
-    public function setQuorumMatchingOperator($operator): Builder
+    public function setQuorumMatchingOperator(float|int $operator): Builder
     {
         if (empty($this->search)) {
             return $this;
-        }
-
-        if (!is_float($operator) && !is_int($operator)) {
-            throw new InvalidArgumentException('Quorum matching operator must be a float or integer.');
         }
 
         if ($this->fullTextOperators['proximity_search_operator'] === true) {
@@ -812,7 +828,7 @@ class Builder
         }
 
         return $this->connection->select(
-            $this->toSql(), $this->getBindings(), $this->countSetRows(), $this->meta
+            $this->toSql(), $this->getBindings(), $this->countSetRows(), $this->meta, !empty($this->highlight)
         );
     }
 

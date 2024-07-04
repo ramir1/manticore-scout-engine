@@ -347,4 +347,12 @@ class ManticoreMysqlEngine extends Engine
     {
         return $this->result['facets'] ?? [];
     }
+
+    /**
+     * Get Highlight
+     */
+    public function getHighlight(): array
+    {
+        return $this->result['highlight'] ?? [];
+    }
 }

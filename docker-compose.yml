@@ -1,0 +1,65 @@
+services:
+    php:
+        build: ./docker/php
+        restart: unless-stopped
+        container_name: docker-php
+        tty: true
+        depends_on:
+            - mariadb
+            - manticore
+        networks:
+            - manticore-scout-engine
+        volumes:
+            - .:/var/www
+    mariadb:
+        image: 'mariadb:10'
+        ports:
+            - '${FORWARD_DB_PORT:-3306}:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ROOT_HOST: '127.0.0.1'
+            MYSQL_DATABASE: '${DB_DATABASE:-testing}'
+            MYSQL_USER: '${DB_USERNAME:-root}'
+            MYSQL_PASSWORD: '${DB_PASSWORD:-password}'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        volumes:
+            - 'mariadb:/var/lib/mysql'
+        networks:
+            - manticore-scout-engine
+        healthcheck:
+            test:
+                - CMD
+                - mysqladmin
+                - ping
+                - '-p${DB_PASSWORD:-password}'
+            retries: 3
+            timeout: 5s
+    manticore:
+        container_name: manticore
+        image: manticoresearch/manticore
+        environment:
+            - EXTRA=1
+        restart: always
+        ports:
+            - 127.0.0.1:9306:9306
+            - 127.0.0.1:9308:9308
+        ulimits:
+            nproc: 65535
+            nofile:
+                soft: 65535
+                hard: 65535
+            memlock:
+                soft: -1
+                hard: -1
+        volumes:
+            - manticore:/var/lib/manticore
+        networks:
+            - manticore-scout-engine
+networks:
+    manticore-scout-engine:
+        driver: bridge
+volumes:
+    mariadb:
+        driver: local
+    manticore:
+        driver: local

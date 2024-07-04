@@ -31,9 +31,9 @@ class ManticoreConnection
         return new PDO('mysql:host=' . $config['host'] . ';port=' . $config['port'], '', '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     }
 
-    public function select($sql, $bindings, int $countRowSet, bool $withMeta)
+    public function select($sql, $bindings, int $countRowSet, bool $withMeta, bool $withHighlight)
     {
-        return $this->runQueryCallback($sql, $bindings, function ($query, $bindings) use ($withMeta, $countRowSet) {
+        return $this->runQueryCallback($sql, $bindings, function ($query, $bindings) use ($withMeta, $countRowSet, $withHighlight) {
             $statement = $this->prepared(
                 $this->getPdo()->prepare($query)
             );
@@ -58,6 +58,7 @@ class ManticoreConnection
                 'hits' => $result[0],
                 'facets' => $grammar->formatFacets(array_slice($result, 1, $countRowSet - 2)),
                 'meta' => $withMeta ? $grammar->formatMeta($result[$countRowSet - 1]) : [],
+                'highlight' => $withHighlight ? $grammar->formatHighlight($result[0]) : [],
             ];
         });
     }

@@ -1,6 +1,8 @@
 # Manticore Scout Engine
 [![Release](https://img.shields.io/github/v/release/RomanStruk/manticore-scout-engine?style=flat-square)](https://github.com/RomanStruk/manticore-scout-engine/releases)
 
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/romanstruk)
+
 Manticore Engine for Laravel Scout
 
 ## Installation
@@ -35,7 +37,7 @@ MANTICORE_ENGINE=http-client
 ### Configuring Driver Connection
 For `http-client` in `.env` file
 ```dotenv
-MANTICORE_HOST=localhost
+MANTICORE_HOST=127.0.0.1
 MANTICORE_PORT=9308
 ```
 For `mysql-builder` in `.env` file
@@ -110,11 +112,19 @@ use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
 $products = Product::search('Brand Name', function (Builder $builder) {
     return $builder
         ->whereAny('category_id', ['1', '2', '3'])
+        ->where('column', '=', 'value')
+//        ->whereIn('column', ['1', '2'])
+//        ->whereNotIn('column', ['3', '4'])
+//        ->whereAll('column', ['3', '4'])
+//        ->whereNotAll('column', ['5', '6'])
+//        ->whereAllMva('column', 'in', ['1', '2'])
+//        ->whereAnyMva('column', 'not in', ['1', '2'])
         ->facet('category_id')
         ->inRandomOrder();
 })->get();
 ```
 
+### Quorum matching operator ###
 Quorum matching operator introduces a kind of fuzzy matching. It will only match those documents that pass a given threshold of given words. The example above ("the world is a wonderful place"/3) will match all documents that have at least 3 of the 6 specified words.
 ```php
 use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
@@ -133,6 +143,7 @@ $products = Product::search('cat dog mouse', function (Builder $builder) {
 })->get();
 ```
 
+### Autocomplete ###
 Autocomplete (or word completion) is a feature in which an application predicts the rest of a word a user is typing. On websites, it's used in search boxes, where a user starts to type a word, and a dropdown with suggestions pops up so the user can select the ending from the list.
 ```php
 use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
@@ -145,7 +156,7 @@ $autocomplete = Product::search('my*',function (Builder $builder) {
 // $autocomplete<array> "my", "my cat", "my dog"
 ```
 
-Spell correction
+### Spell correction ###
 ```php
 use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
 
@@ -168,7 +179,32 @@ $result = Product::search('bagg with tasel',function (Builder $builder) {
 })->raw();
 // $result<array> 0 => ['suggest' => "bagg with tassel"]
 ```
-### Percolate Query
+
+### Highlighting ###
+Highlighting enables you to obtain highlighted text fragments (referred to as snippets) from documents containing matching keywords.
+```php
+use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
+
+//[doc] My cat loves my dogs.
+
+$highlight = Product::search('dogs',
+    fn(Builder $builder) => $builder->highlight()->select(['id', 'name'])
+)->raw();
+// $highlight['hits']<array> [id => 1, name => 'My cat loves my dogs.', 'highlight' => 'My cat loves my <b>dogs</b>.']
+```
+or
+```php
+use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
+
+//[doc] title => My cat loves my dogs. id => 1000
+
+$highlight = Product::search('dogs',
+    fn(Builder $builder) => $builder->highlight()->select(['id', 'title'])
+)->get();
+// $highlight->getHighlight()[1000] => 'My cat loves my <b>dogs</b>.'
+```
+
+### Percolate Query ###
 To create a migration, specify the required fields in the searchable model
 ```php
 public function scoutIndexMigration(): array

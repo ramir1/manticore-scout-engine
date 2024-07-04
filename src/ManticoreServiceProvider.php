@@ -57,6 +57,9 @@ class ManticoreServiceProvider extends ServiceProvider
         Collection::macro('getFacets', function () {
             return app(EngineManager::class)->driver('manticore')->getFacets();
         });
+        Collection::macro('getHighlight', function () {
+            return app(EngineManager::class)->driver('manticore')->getHighlight();
+        });
     }
 
     protected function configureCommands()
