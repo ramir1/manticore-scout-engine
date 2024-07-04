@@ -12,6 +12,7 @@ class CreateProductsTable extends Migration
             $table->id();
 
             $table->string('name');
+            $table->string('alt')->nullable();
             $table->string('brand_name');
             $table->string('property');
             $table->text('description');

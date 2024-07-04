@@ -90,7 +90,59 @@ class ManticoreGrammar extends Grammar
      */
     protected function compileColumns(Builder $query, $columns): string
     {
-        return 'select ' . $this->columnize($columns);
+        return 'select ' . $this->columnize($columns).$this->compileHighlight($query);
+    }
+
+    /**
+     * Compile the "HIGHLIGHT()" portion of the query.
+     */
+    protected function compileHighlight(Builder $query): string
+    {
+        if (empty($query->highlight)){
+            return '';
+        }
+
+        $components = [
+            $this->compileHighlightOptions($query->highlight['options']),
+            $this->compileHighlightFieldList($query->highlight['field_list']),
+            $this->compileHighlightQuery($query->bindings['highlight']),
+        ];
+
+        return ', HIGHLIGHT('. implode(',', array_filter($components)). ') as '.$query->highlight['as'];
+    }
+
+    /**
+     * Compile the "options" portions of the highlight query.
+     */
+    protected function compileHighlightOptions(array $options): string
+    {
+        return '{'.collect($options)
+                ->map(fn($v, $k) => $k.'='.(is_int($v) ? $v : "'{$v}'"))
+                ->implode(',').'}';
+    }
+
+    /**
+     * Compile the "field_list" portions of the highlight query.
+     */
+    protected function compileHighlightFieldList(array $fieldList): string
+    {
+        if (empty($fieldList)){
+            return '';
+        }
+
+        return "'".implode(',', $fieldList)."'";
+    }
+
+    /**
+     * Compile the "field_list" portions of the highlight query.
+     */
+    protected function compileHighlightQuery(array $bindings): string
+    {
+        if (empty($bindings)){
+            return '';
+        }
+
+        return '?';
     }
 
     /**
@@ -534,6 +586,14 @@ class ManticoreGrammar extends Grammar
     public function formatMeta(array $meta): array
     {
         return collect($meta)->mapWithKeys(fn($value) => [$value['Variable_name'] => $value['Value']])->all();
+    }
+
+    /**
+     * Formatting meta results
+     */
+    public function formatHighlight(array $results): array
+    {
+        return collect($results)->mapWithKeys(fn($value, $index) => [$value['id'] ?? $index => $value['highlight']])->all();
     }
 
     /**
