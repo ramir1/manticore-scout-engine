@@ -721,7 +721,7 @@ class Builder
         $this->bindings['search'] = [];
         $this->addBinding($this->search, 'search');
 
-        $this->meta = false;
+        $this->discardMeta();
 
         return $this;
     }
@@ -739,9 +739,19 @@ class Builder
     /**
      * Init the "meta" information.
      */
-    protected function meta(): Builder
+    public function meta(): Builder
     {
         $this->meta = true;
+
+        return $this;
+    }
+
+    /**
+     * Discard "meta" information.
+     */
+    public function discardMeta(): Builder
+    {
+        $this->meta = false;
 
         return $this;
     }
