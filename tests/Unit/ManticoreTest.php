@@ -4,7 +4,6 @@ namespace RomanStruk\ManticoreScoutEngine\Tests\Unit;
 
 use Illuminate\Support\Facades\Artisan;
 use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
-use RomanStruk\ManticoreScoutEngine\Mysql\ManticoreConnection;
 use RomanStruk\ManticoreScoutEngine\Mysql\ManticoreGrammar;
 use RomanStruk\ManticoreScoutEngine\Tests\TestCase;
 use RomanStruk\ManticoreScoutEngine\Tests\TestModels\Product;

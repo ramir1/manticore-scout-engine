@@ -17,10 +17,12 @@ abstract class TestCase extends BaseTestCase
 
         include_once __DIR__ . '/stubs/create_products_table.php.stub';
         include_once __DIR__ . '/stubs/create_percolate_products_table.php.stub';
+        include_once __DIR__ . '/stubs/create_similar_products_table.php.stub';
 
         // run the up() method (perform the migration)
         (new \CreateProductsTable)->up();
         (new \CreatePercolateProductsTable)->up();
+        (new \CreateSimilarProductsTable)->up();
     }
 
     protected function getPackageProviders($app)

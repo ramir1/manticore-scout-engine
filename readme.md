@@ -1,5 +1,6 @@
 # Manticore Scout Engine
 [![Release](https://img.shields.io/github/v/release/RomanStruk/manticore-scout-engine?style=flat-square)](https://github.com/RomanStruk/manticore-scout-engine/releases)
+[![StandWithUkraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://stand-with-ukraine.pp.ua/)
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/romanstruk)
 
@@ -238,6 +239,50 @@ use RomanStruk\ManticoreScoutEngine\Mysql\Builder;
 $products = PercolateProduct::search(json_encode(['title' =>'Beautiful shoes']),
     fn(Builder $builder) => $builder->percolateQuery(docs: true, docsJson: true)
 )->get();
+```
+
+### KNN ###
+K-nearest neighbor vector search
+https://manual.manticoresearch.com/Searching/KNN#K-nearest-neighbor-vector-search
+
+Added the ability to create records with the `float_vector` field type
+```php
+use RomanStruk\ManticoreScoutEngine\Mysql\ManticoreVector;
+
+public function scoutIndexMigration(): array
+{
+    return [
+        'fields' => [
+            'id' => ['type' => 'bigint'],
+            'name' => ['type' => 'text'],
+            'vector' => ['type' => "float_vector knn_type='hnsw' knn_dims='4' hnsw_similarity='l2'"],
+        ],
+        'settings' => [],
+    ];
+}
+
+
+public function toSearchableArray(): array
+{
+    return [
+        'id' => $this->id,
+        'name' => $this->name,
+        'vector' => new ManticoreVector(...$this->vector), // $this->vector is array
+    ];
+}
+```
+
+Currently, the implementation is only available using `whereRaw`.
+```php
+$results = SimilarProduct::search('bar', function (Builder $query) {
+    return $query->whereRaw("knn ( vector, 5, (0.286569,-0.031816,0.066684,0.032926), 2000 )");
+})->get();
+```
+Please note that when using the "Find similar docs by id" syntax, you need to discard meta `discardMeta()`. Exact information about the number of results is not available
+```php
+$results = SimilarProduct::search('foo', function (Builder $query) {
+    return $query->whereRaw("knn ( vector, 5, 1 )")->discardMeta();
+})->get();
 ```
 
 ## Change log
