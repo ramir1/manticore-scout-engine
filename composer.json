@@ -1,6 +1,7 @@
 {
     "name": "romanstruk/manticore-scout-engine",
     "description": "Laravel Manticore Scout Engine",
+    "keywords": ["laravel", "manticore", "scout"],
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -41,8 +42,7 @@
     "minimum-stability": "dev",
     "scripts": {
         "test": "phpunit --colors=always",
-        "test-f": "phpunit --colors=always --filter",
-        "ins": "./vendor/bin/phpinsights"
+        "test-f": "phpunit --colors=always --filter"
     },
     "config": {
         "allow-plugins": {

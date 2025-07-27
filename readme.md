@@ -285,6 +285,30 @@ $results = SimilarProduct::search('foo', function (Builder $query) {
 })->get();
 ```
 
+### Join Table ###
+Table joins in Manticore Search enable you to combine documents from two tables by matching related columns. This functionality allows for more complex queries and enhanced data retrieval across multiple tables.
+
+https://manual.manticoresearch.com/Searching/KNN#K-nearest-neighbor-vector-search
+```php
+use App\Models\Category;
+use App\Models\Product;
+
+$categoryTable = (new Category)->searchableAs();
+
+$searchable = Product::search('some search query', static fn(Builder $builder)
+    => $builder
+    ->select(['id', DB::raw($categoryTable.'.name as name')])
+    ->join($categoryTable, $categoryTable.'.id', '=', $builder->index.'.category_id') // inner join table categories
+    ->leftJoin($categoryTable, $categoryTable.'.id', '=', $builder->index.'.category_id') // left join table categories
+    ->orderBy('id'),
+)->raw();
+```
+**Manticore Docs**
+LEFT JOIN: Returns all rows from the left table and the matched rows from the right table. If there is no match, NULL values are returned for the right table's columns.
+
+**WARNING** 
+there is a problem that "LEFT JOIN" does not return "NULL" in the classic php sense but returns a string with the text "NULL"
+
 ## Change log
 
 Please see the [changelog](changelog.md) for more information on what has changed recently.
