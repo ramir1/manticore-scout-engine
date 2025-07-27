@@ -58,9 +58,15 @@ class Builder
      */
     public int $groupN = 0;
 
+    /**
+     * The table joins for the query.
+     */
+    public ?array $joins = null;
+
     public array $bindings = [
         'select' => [],
         'highlight' => [],
+        'join' => [],
         'search' => [],
         'where' => [],
         'groupBy' => [],
@@ -232,6 +238,30 @@ class Builder
         $this->addBinding('"' . $escapedSearch . '"~' . $operator, 'search');
 
         return $this;
+    }
+
+    /**
+     * Add a join clause to the query.
+     */
+    public function join(string $table, string|Expression $first, string $operator,  string|Expression $second, string $type = 'inner'): static
+    {
+        $this->joins[] = [
+            'table' => $table,
+            'first' => $first,
+            'operator' => $operator,
+            'second' => $second,
+            'type' => $type,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Add a left join clause to the query.
+     */
+    public function leftJoin(string $table, string|Expression $first, string $operator,  string|Expression $second): static
+    {
+        return $this->join($table, $first, $operator, $second, 'left');
     }
 
     /**
@@ -503,12 +533,13 @@ class Builder
      */
     public function groupBy(...$groups): Builder
     {
+        $newGroups = [];
+
         foreach ($groups as $group) {
-            $this->groups = array_merge(
-                $this->groups,
-                Arr::wrap($group)
-            );
+            $newGroups[] = Arr::wrap($group);
         }
+
+        $this->groups = array_merge($this->groups, ...$newGroups);
 
         return $this;
     }

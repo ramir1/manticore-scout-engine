@@ -15,11 +15,13 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        include_once __DIR__ . '/stubs/create_categories_table.php.stub';
         include_once __DIR__ . '/stubs/create_products_table.php.stub';
         include_once __DIR__ . '/stubs/create_percolate_products_table.php.stub';
         include_once __DIR__ . '/stubs/create_similar_products_table.php.stub';
 
         // run the up() method (perform the migration)
+        (new \CreateCategoriesTable)->up();
         (new \CreateProductsTable)->up();
         (new \CreatePercolateProductsTable)->up();
         (new \CreateSimilarProductsTable)->up();

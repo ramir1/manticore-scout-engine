@@ -4,6 +4,8 @@ namespace RomanStruk\ManticoreScoutEngine\Mysql;
 
 use Illuminate\Database\Grammar;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use RuntimeException;
 
 class ManticoreGrammar extends Grammar
 {
@@ -13,6 +15,7 @@ class ManticoreGrammar extends Grammar
     protected array $selectComponents = [
         'columns',
         'index',
+        'joins',
         'search',
         'wheres',
         'groups',
@@ -162,16 +165,18 @@ class ManticoreGrammar extends Grammar
             return '';
         }
 
-        return 'where match(?)';
+        return 'where match(?, '.$query->index.')';
     }
 
     /**
      * Compile the "autocomplete" portions of the query.
+     *
+     * @throws RuntimeException
      */
     protected function compileKeywords(Builder $query, array $options): string
     {
         if (empty($query->search)) {
-            throw new \Exception('Empty Search query!');
+            throw new RuntimeException('Empty Search query!');
         }
 
         $options = $this->compileCallOptions($options);
@@ -181,11 +186,13 @@ class ManticoreGrammar extends Grammar
 
     /**
      * Compile the "SUGGEST" portions of the query.
+     *
+     * @throws RuntimeException
      */
     protected function compileSuggest(Builder $query, array $options): string
     {
         if (empty($query->search)) {
-            throw new \Exception('Empty SUGGEST query!');
+            throw new RuntimeException('Empty SUGGEST query!');
         }
 
         $options = $this->compileCallOptions($options);
@@ -195,11 +202,13 @@ class ManticoreGrammar extends Grammar
 
     /**
      * Compile the "QSUGGEST" portions of the query.
+     *
+     * @throws RuntimeException
      */
     protected function compileQSuggest(Builder $query, array $options): string
     {
         if (empty($query->search)) {
-            throw new \Exception('Empty search query!');
+            throw new RuntimeException('Empty search query!');
         }
 
         $options = $this->compileCallOptions($options);
@@ -209,11 +218,13 @@ class ManticoreGrammar extends Grammar
 
     /**
      * Compile the "Percolate Query" portions of the query.
+     *
+     * @throws RuntimeException
      */
     protected function compilePercolateQuery(Builder $query, array $options): string
     {
         if (empty($query->search)) {
-            throw new \Exception('Empty PQ query!');
+            throw new RuntimeException('Empty PQ query!');
         }
 
         $options = $this->compileCallOptions($options);
@@ -236,6 +247,28 @@ class ManticoreGrammar extends Grammar
 
         if (count($sql) > 0) {
             return (empty($query->search) ? 'where ' : ' and ') . $this->removeLeadingBoolean(implode(' ', $sql));
+        }
+
+        return '';
+    }
+
+    /**
+     * Compile the "join" portions of the query.
+     */
+    public function compileJoins(Builder $query): string
+    {
+        if (empty($query->joins)) {
+            return '';
+        }
+
+        $sql = collect($query->joins)->map(function ($join) {
+            $table = $this->wrapTable($join['table']);
+
+            return strtoupper($join['type']) . ' JOIN ' . $table. ' ON ' . $this->wrap($join['first']) .' '.$join['operator'].' '.$this->wrap($join['second']);
+        })->all();
+
+        if (count($sql) > 0) {
+            return implode(' ', $sql);
         }
 
         return '';
@@ -311,6 +344,20 @@ class ManticoreGrammar extends Grammar
     protected function wrapValue($value): string
     {
         return $value === '*' ? $value : '`' . str_replace('`', '``', $value) . '`';
+    }
+
+    /**
+     * Wrap the given value segments.
+     *
+     * @param  array  $segments
+     */
+    protected function wrapSegments($segments): string
+    {
+        return (new Collection($segments))->map(function ($segment, $key) use ($segments) {
+            return $key === 0 && count($segments) > 1
+                ? $this->wrapTable($segment)
+                : $segment;
+        })->implode('.');
     }
 
     /**
@@ -477,7 +524,7 @@ class ManticoreGrammar extends Grammar
         return 'group by ' . $this->columnize($groups);
     }
 
-    protected function compileGroupSorts(Builder $query, array $orders)
+    protected function compileGroupSorts(Builder $query, array $orders): string
     {
         if (empty($orders)) {
             return '';
